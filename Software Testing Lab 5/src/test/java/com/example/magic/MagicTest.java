@@ -30,6 +30,12 @@ import org.junit.jupiter.params.provider.ValueSource;
  * C4a  Archmage(10,100), barrier damage 50                          mana >= 0   (below mana: valid)
  * C4b  Archmage(10,100), barrier damage 600                         mana >= 0   (boundary: all mana)
  * C4c  Archmage(10,100), barrier damage 601                         mana >= 0   (just above mana)
+ *                                                                   stance == IDLE
+ * C6   W + Archmage(10,100)        same sequence:                    same behavioral/state
+ *                                   beginChanneling(), surge 101      results/contract behavior
+ * C7   W sender + W recipient      transferMana(100, 1)              sender -100; recipient +100
+ * C8   W                         castSpell(Spell) vs               Spell ref: result == 40;
+ *                                castSpell(Object)                 Object ref: result == 10
  */
 class SpellcastingContractTest {
 
@@ -133,5 +139,170 @@ class SpellcastingContractTest {
             w.beginChanneling();
             w.spellSurge(SAFE_INVESTMENT);
         }
+    }
+
+
+    // ============================================================
+    // Challenge 5: Yo-Yo Effect Cascade
+    // ============================================================
+    
+    @Test
+    @DisplayName("Challenge 5: Archmage high-power surge preserves valid state")
+    void archmage_highPowerSurge_preservesValidState() {
+
+        Archmage archmage = new Archmage(10, 100);
+
+        archmage.beginChanneling();
+
+        int result = archmage.spellSurge(101);
+
+        // Verify that the input produced the high-power path.
+        assertTrue(
+                result > 200,
+                "Expected high-power surge to exceed 200"
+        );
+
+        /*
+         * Because the high-power result causes Archmage.spellSurge()
+         * to call rest(), mana should be restored to MAX_MANA.
+         */
+        assertEquals(
+                MAX_MANA,
+                archmage.getManaStore()
+        );
+
+       
+        assertEquals(
+                Wizard.Stance.IDLE,
+                archmage.getCurrentStance()
+        );
+    }
+
+
+    // ============================================================
+    // Challenge 6: Dynamic Binding and Polymorphic Substitution
+    // ============================================================
+
+   
+    @Test
+    @DisplayName("Challenge 6: Wizard and Archmage remain behaviorally substitutable")
+    void wizardAndArchmage_shouldBehaveConsistently() {
+
+        Wizard wizard = new Wizard(10, 100);
+        Wizard archmage = new Archmage(10, 100);
+
+        // Give both objects the same starting state.
+        wizard.beginChanneling();
+        archmage.beginChanneling();
+
+        int wizardResult = wizard.spellSurge(101);
+        int archmageResult = archmage.spellSurge(101);
+
+        assertEquals(
+                151,
+                wizardResult,
+                "Normal Wizard should produce 151 power"
+        );
+
+        assertEquals(
+                302,
+                archmageResult,
+                "Archmage should produce 302 power"
+        );
+
+        assertEquals(
+                Wizard.Stance.CHANNELING,
+                wizard.getCurrentStance()
+        );
+
+        assertEquals(
+                Wizard.Stance.CHANNELING,
+                archmage.getCurrentStance()
+        );
+
+        assertEquals(
+                MAX_MANA - 101,
+                wizard.getManaStore()
+        );
+
+        assertEquals(
+                MAX_MANA,
+                archmage.getManaStore(),
+                "Archmage incorrectly restores mana through rest()"
+        );
+    }
+
+
+    // ============================================================
+    // Category III: Message and Parameter Passing Faults
+    // ============================================================
+
+    @Test
+    @DisplayName("Challenge 7: transferMana() deducts the exact amount")
+    void transferMana_deductsExactAmountFromSender() {
+
+        Wizard sender = newWizard();
+        Wizard recipient = newWizard();
+
+        int senderInitialMana = sender.getManaStore();
+        int recipientInitialMana = recipient.getManaStore();
+
+        int amount = 100;
+        int priorityTier = 1;
+
+        sender.transferMana(
+                recipient,
+                amount,
+                priorityTier
+        );
+
+        assertAll(
+                () -> assertEquals(
+                        senderInitialMana - amount,
+                        sender.getManaStore(),
+                        "Sender should lose exactly the transferred amount"
+                ),
+
+                () -> assertEquals(
+                        recipientInitialMana + amount,
+                        recipient.getManaStore(),
+                        "Recipient should gain exactly the transferred amount"
+                )
+        );
+    }
+
+
+    // ============================================================
+    // Challenge 8: Static Overload Resolution
+    // ============================================================
+
+    @Test
+    @DisplayName("Challenge 8: compile-time type determines overloaded method")
+    void castSpell_compileTimeTypeDeterminesOverload() throws Exception {
+
+        Wizard wizard = new Wizard(10, 100);
+
+        Spell spell = new Spell(
+                "Fireball",
+                20,
+                5
+        );
+
+        Object spellAsObject = spell;
+
+        int spellResult = wizard.castSpell(spell);
+        int objectResult = wizard.castSpell(spellAsObject);
+
+        assertEquals(
+                40,
+                spellResult,
+                "Spell reference should call castSpell(Spell)"
+        );
+
+        assertEquals(
+                10,
+                objectResult,
+                "Object reference should call castSpell(Object)"
+        );
     }
 }
