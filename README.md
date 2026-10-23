@@ -11,3 +11,4 @@ This lab can be easily placed into Intellij.
 
 Another option would be to copy my testing code and place it into your own project.
 
+5 of these tests should fail, and 7 of them should pass.
