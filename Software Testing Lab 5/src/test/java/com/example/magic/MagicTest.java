@@ -12,31 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/**
- * Lab 5: Object Oriented Testing (Challenges 1-4). Black-box: only public members are
- * used; the private surge counter is judged by its effects (when the wizard exhausts).
- *
- * TEST CASE INPUTS (TCIs)   [W = new Wizard(5, 100), mana starts at 600]
- * ------------------------------------------------------------------------------------
- * ID   Setup                     Input                              Expected
- * C1   W                         4 x (beginChanneling, surge 10)    stance EXHAUSTED (precondition)
- *                                then rest()                        mana == 600, stance == IDLE
- * C2   W (IDLE)                  spellSurge(10), no channeling      InvalidStateException; mana == 600;
- *                                                                   then 3 channeled surges -> not
- *                                                                   EXHAUSTED, 4th -> EXHAUSTED
- * C3a  W                         surge 600, repeated                0 <= mana <= 600 after every call
- * C3b  W                         castSpell(Fireball cost 20) rep.   0 <= mana <= 600 after every call
- * C3c  W                         (surge 600, cast cost 20) repeated 0 <= mana <= 600 after every call
- * C4a  Archmage(10,100), barrier damage 50                          mana >= 0   (below mana: valid)
- * C4b  Archmage(10,100), barrier damage 600                         mana >= 0   (boundary: all mana)
- * C4c  Archmage(10,100), barrier damage 601                         mana >= 0   (just above mana)
- *                                                                   stance == IDLE
- * C6   W + Archmage(10,100)        same sequence:                    same behavioral/state
- *                                   beginChanneling(), surge 101      results/contract behavior
- * C7   W sender + W recipient      transferMana(100, 1)              sender -100; recipient +100
- * C8   W                         castSpell(Spell) vs               Spell ref: result == 40;
- *                                castSpell(Object)                 Object ref: result == 10
- */
+
 class SpellcastingContractTest {
 
     private static final int MAX_MANA = Spellcaster.MAX_MANA_STORE;
